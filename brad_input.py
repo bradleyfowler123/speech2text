@@ -1,6 +1,9 @@
 import numpy as np
 from random import randint
+import os
+import brad_w2v as w2v
 
+maxEncoderLength = 15
 
 def createTrainingMatrices(conversationFileName, wList, maxLen):
 	conversationDictionary = np.load(conversationFileName).item()
@@ -53,8 +56,8 @@ def getTrainingBatch(localXTrain, localYTrain, localBatchSize, maxLen):
 
 	# Lagged labels are for the training input into the decoder
 	laggedLabels = []
-	EOStokenIndex = wordList.index('<EOS>')
-	padTokenIndex = wordList.index('<pad>')
+	EOStokenIndex = w2v.wordList.index('<EOS>')
+	padTokenIndex = w2v.wordList.index('<pad>')
 	for example in labels:
 		eosFound = np.argwhere(example==EOStokenIndex)[0]
 		shiftedExample = np.roll(example,1)
@@ -101,3 +104,16 @@ def getTestInput(inputMessage, wList, maxLen):
 	for num in encoderMessage:
 		encoderMessageList.append([num])
 	return encoderMessageList
+
+
+
+if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
+	xTrain = np.load('Seq2SeqXTrain.npy')
+	yTrain = np.load('Seq2SeqYTrain.npy')
+	print('Finished loading training matrices')
+	numTrainingExamples = xTrain.shape[0]
+else:
+	numTrainingExamples, xTrain, yTrain = createTrainingMatrices('trained_w2v_embedding/idsMatrix.npy', w2v.wordList, maxEncoderLength)
+	np.save('Seq2SeqXTrain.npy', xTrain)
+	np.save('Seq2SeqYTrain.npy', yTrain)
+	print('Finished creating training matrices')

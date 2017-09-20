@@ -1,12 +1,11 @@
 import numpy as np
-import pickle
 
 
 # Loading in all the data structures
-with open("wordList.txt", "rb") as fp:
-	wordList = pickle.load(fp)
+wordList = np.load("trained_w2v_embedding/wordsList.npy")
+wordList = wordList.tolist()
 
-wordVectors = np.load('embeddingMatrix.npy')
+wordVectors = np.load('trained_w2v_embedding/wordVectors.npy')
 vocabSize = len(wordList)
 wordVecDimensions = wordVectors.shape[1]
 
@@ -21,6 +20,8 @@ wordVectors = np.concatenate((wordVectors,EOSVector), axis=0)
 wordList.append('<pad>')
 wordList.append('<EOS>')
 vocabSize = vocabSize + 2
+
+
 
 
 

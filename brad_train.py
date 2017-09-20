@@ -4,6 +4,7 @@ import datetime
 from random import randint
 import brad_model as model
 import brad_w2v as w2v
+import brad_input as data_input
 
 
 
@@ -58,7 +59,7 @@ with tf.Session() as sess:
 
 	for i in range(numIterations):
 
-		encoderTrain, decoderTargetTrain, decoderInputTrain = getTrainingBatch(xTrain, yTrain, BATCH_SIZE, maxEncoderLength)
+		encoderTrain, decoderTargetTrain, decoderInputTrain = data_input.getTrainingBatch(data_input.xTrain, data_input.yTrain, BATCH_SIZE, maxEncoderLength)
 		feedDict = {encoder_inputs[t]: encoderTrain[t] for t in range(maxEncoderLength)}
 		feedDict.update({decoder_labels[t]: decoderTargetTrain[t] for t in range(maxDecoderLength)})
 		feedDict.update({decoder_inputs[t]: decoderInputTrain[t] for t in range(maxDecoderLength)})
@@ -79,7 +80,7 @@ with tf.Session() as sess:
 			num = randint(0, len(encoderTestStrings) - 1)
 			print()
 			encoderTestStrings[num]
-			inputVector = getTestInput(encoderTestStrings[num], w2v.wordList, maxEncoderLength);
+			inputVector = data_input.getTestInput(encoderTestStrings[num], w2v.wordList, maxEncoderLength);
 			feedDict = {encoder_inputs[t]: inputVector[t] for t in range(maxEncoderLength)}
 			feedDict.update({decoder_labels[t]: zeroVector for t in range(maxDecoderLength)})
 			feedDict.update({decoder_inputs[t]: zeroVector for t in range(maxDecoderLength)})
