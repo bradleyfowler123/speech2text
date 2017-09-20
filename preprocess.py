@@ -3,10 +3,8 @@ import pandas as pd
 import glob
 import csv
 import librosa
-import scikits.audiolab
 import data
 import os
-import subprocess
 
 __author__ = 'namju.kim@kakaobrain.com'
 
@@ -67,7 +65,7 @@ def process_vctk(csv_file):
 #
 # process LibriSpeech corpus
 #
-
+"""
 def process_libri(csv_file, category):
 
     parent_path = _data_path + 'LibriSpeech/' + category + '/'
@@ -135,7 +133,7 @@ def process_libri(csv_file, category):
 # process TEDLIUM corpus
 #
 def convert_sph( sph, wav ):
-    """Convert an sph file into wav format for further processing"""
+    #Convert an sph file into wav format for further processing
     command = [
         'sox','-t','sph', sph, '-b','16','-t','wav', wav
     ]
@@ -199,7 +197,7 @@ def process_ted(csv_file, category):
             # save mfcc
             np.save(target_filename, mfcc, allow_pickle=False)
 
-
+"""
 #
 # Create directories
 #
@@ -219,7 +217,7 @@ if not os.path.exists('asset/data/preprocess/mfcc'):
 csv_f = open('asset/data/preprocess/meta/train.csv', 'w')
 process_vctk(csv_f)
 csv_f.close()
-
+"""
 # LibriSpeech corpus for train
 csv_f = open('asset/data/preprocess/meta/train.csv', 'a+')
 process_libri(csv_f, 'train-clean-360')
@@ -257,4 +255,4 @@ csv_f.close()
 csv_f = open('asset/data/preprocess/meta/test.csv', 'a+')
 process_ted(csv_f, 'test')
 csv_f.close()
-
+"""
