@@ -7,7 +7,7 @@ import brad_w2v as w2v
 import brad_input as data_input
 
 
-
+"""
 # Some test strings that we'll use as input at intervals during training
 encoderTestStrings = ["whats up bro",
 					  "hi",
@@ -17,23 +17,23 @@ encoderTestStrings = ["whats up bro",
 					  ]
 
 zeroVector = np.zeros((1), dtype='int32')
-
+"""
 
 # ----------------- START ---------------
 
 # global variables
 numIterations = 500000
 BATCH_SIZE = 24
-maxEncoderLength = 15
-maxDecoderLength = maxEncoderLength
+maxEncoderLength = 24
+maxDecoderLength = 72
 
 
 # input
 encoder_inputs, decoder_inputs, decoder_labels, feed_previous = model.io()				# using the feed dictionary
 # seq2seq model
-decoder_outputs, decoderPrediction = model.inference(encoder_inputs, datetime, feed_previous, w2v.vocabSize)
+decoder_outputs, decoderPrediction = model.inference(encoder_inputs, decoder_inputs, feed_previous, w2v.vocabSize)
 # loss
-loss = model.loss(decoder_outputs, decoder_labels)
+loss = model.loss(decoder_outputs, decoder_labels, w2v.vocabSize)
 # training operation
 train_step = model.optimise(loss)
 
@@ -75,7 +75,7 @@ with tf.Session() as sess:
 		if i % 10000 == 0 and i != 0:
 			savePath = saver.save(sess, "models/pretrained_seq2seq.ckpt", global_step=i)
 
-
+		"""
 		if i % 25 == 0 and i != 0:
 			num = randint(0, len(encoderTestStrings) - 1)
 			print()
@@ -88,3 +88,4 @@ with tf.Session() as sess:
 			ids = (sess.run(decoderPrediction, feed_dict=feedDict))
 			print()
 			w2v.idsToSentence(ids, w2v.wordList)
+		"""

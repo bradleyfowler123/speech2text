@@ -24,7 +24,7 @@ batch_size = 16    # total batch size
 data = SpeechCorpus(batch_size=batch_size * tf.sg_gpus())
 
 # mfcc feature of audio
-inputs = tf.split(data.mfcc, tf.sg_gpus(), axis=0)
+inputs = tf.split(data.mfcc, tf.sg_gpus(), axis=0)              # 'splits tensor into list of %i smaller tensors'   % number_of_gpus
 # target sentence label
 labels = tf.split(data.label, tf.sg_gpus(), axis=0)
 

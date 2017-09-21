@@ -2,8 +2,9 @@ import numpy as np
 from random import randint
 import os
 import brad_w2v as w2v
+import csv
 
-maxEncoderLength = 15
+maxEncoderLength = 72
 
 def createTrainingMatrices(conversationFileName, wList, maxLen):
 	conversationDictionary = np.load(conversationFileName).item()
@@ -29,7 +30,8 @@ def createTrainingMatrices(conversationFileName, wList, maxLen):
 			except ValueError:
 				# TODO: This isnt really the right way to handle this scenario
 				encoderMessage[keyIndex] = 0
-		encoderMessage[keyIndex + 1] = wList.index('<EOS>')
+		encoderMessage[keyIndex + 1] = wList.index('<EOS>'
+												   )
 		# Integerize the decoder string
 		for valueIndex, word in enumerate(valueSplit):
 			try:
@@ -54,22 +56,15 @@ def getTrainingBatch(localXTrain, localYTrain, localBatchSize, maxLen):
 	for index,example in enumerate(reversedList):
 		reversedList[index] = list(reversed(example))
 
+
 	# Lagged labels are for the training input into the decoder
 	laggedLabels = []
-	EOStokenIndex = w2v.wordList.index('<EOS>')
-	padTokenIndex = w2v.wordList.index('<pad>')
 	for example in labels:
-		eosFound = np.argwhere(example==EOStokenIndex)[0]
-		shiftedExample = np.roll(example,1)
-		shiftedExample[0] = EOStokenIndex
-		# The EOS token was already at the end, so no need for pad
-		if (eosFound != (maxLen - 1)):
-			shiftedExample[eosFound+1] = padTokenIndex
-		laggedLabels.append(shiftedExample)
+		laggedLabels = np.roll(example,1)
 
 	# Need to transpose these
 	reversedList = np.asarray(reversedList).T.tolist()
-	labels = labels.T.tolist()
+	labels = np.asarray(labels).T.tolist()
 	laggedLabels = np.asarray(laggedLabels).T.tolist()
 	return reversedList, labels, laggedLabels
 
@@ -106,6 +101,22 @@ def getTestInput(inputMessage, wList, maxLen):
 	return encoderMessageList
 
 
+numTrainingExamples = 39410
+def loadInput():
+	# load meta file
+	label, mfcc_file = [], []
+	with open('asset/data/preprocess/meta/train.csv') as csv_file:
+		reader = csv.reader(csv_file, delimiter=',')
+		for row in reader:
+			# mfcc file
+			mfcc2D = np.load('asset/data/preprocess/mfcc/' + row[0] + '.npy')
+			mfcc_file.append(mfcc2D.flatten())
+			# label info ( convert to string object for variable-length support )
+			label.append([w2v.wordVectors[int(index)] for index in row[1:]])
+
+
+	return mfcc_file, label
+
 
 if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
 	xTrain = np.load('Seq2SeqXTrain.npy')
@@ -113,7 +124,13 @@ if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
 	print('Finished loading training matrices')
 	numTrainingExamples = xTrain.shape[0]
 else:
-	numTrainingExamples, xTrain, yTrain = createTrainingMatrices('trained_w2v_embedding/idsMatrix.npy', w2v.wordList, maxEncoderLength)
-	np.save('Seq2SeqXTrain.npy', xTrain)
-	np.save('Seq2SeqYTrain.npy', yTrain)
+	# get input audio as vectors and store in xtrain
+	# get labels for audio and store in ytrain
+	xTrain, yTrain = loadInput()#'snkifsefs ,kef', w2v.wordList, maxEncoderLength)
+	#np.save('Seq2SeqXTrain.npy', xTrain)
+	#np.save('Seq2SeqYTrain.npy', yTrain)
+
 	print('Finished creating training matrices')
+
+
+
