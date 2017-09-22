@@ -46,10 +46,11 @@ def createTrainingMatrices(conversationFileName, wList, maxLen):
 	numExamples = xTrain.shape[0]
 	return numExamples, xTrain, yTrain
 
-def getTrainingBatch(localXTrain, localYTrain, localBatchSize, maxLen):
+def getTrainingBatch(localXTrain, localYTrain, localBatchSize, local_label_indicies):
 	num = randint(0,numTrainingExamples - localBatchSize - 1)
 	arr = localXTrain[num:num + localBatchSize]
 	labels = localYTrain[num:num + localBatchSize]
+	label_inds = local_label_indicies[num:num + localBatchSize]
 	# Reversing the order of encoder string apparently helps as per 2014 paper
 	reversedList = list(arr)
 	for index,example in enumerate(reversedList):
@@ -63,7 +64,7 @@ def getTrainingBatch(localXTrain, localYTrain, localBatchSize, maxLen):
 	#reversedList = np.asarray(reversedList).T.tolist()
 	#labels = np.asarray(labels).T.tolist()
 	#laggedLabels = np.asarray(laggedLabels).T.tolist()
-	return reversedList, labels, laggedLabels
+	return reversedList, labels, laggedLabels, label_inds
 
 def translateToSentences(inputs, wList, encoder=False):
 	EOStokenIndex = wList.index('<EOS>')
@@ -101,7 +102,7 @@ def getTestInput(inputMessage, wList, maxLen):
 numTrainingExamples = 39410
 def loadInput():
 	# load meta file
-	label, mfcc_file = [], []
+	label, label_indicies, mfcc_file = [], [], []
 	with open('asset/data/preprocess/meta/train.csv') as csv_file:
 		reader = csv.reader(csv_file, delimiter=',')
 		for row in reader:
@@ -109,11 +110,12 @@ def loadInput():
 			mfcc2D = np.load('asset/data/preprocess/mfcc/' + row[0] + '.npy').T
 			mfcc_file.append(mfcc2D)		# no .flattern()
 			# label info ( convert to string object for variable-length support )
+			label_indicies.append([int(index) for index in row[1:]])
 			label.append([w2v.wordVectors[int(index)] for index in row[1:]])
 
 
-	return mfcc_file, label			# each is a list of 43663 items: labels item is 36 length list of vectors of size 50
-									# input item is an array 20x65 of floats. equvilent to length 20 list of 65 vectors
+	return mfcc_file, label, label_indicies			# each is a list of 43663 items: labels item is 36 length list of vectors of size 50
+									# input item is an array 20x65 of floats. equvilent to length 20 list of size(sequence_length) vectors
 
 if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
 	xTrain = np.load('Seq2SeqXTrain.npy')
@@ -123,7 +125,7 @@ if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
 else:
 	# get input audio as vectors and store in xtrain
 	# get labels for audio and store in ytrain
-	xTrain, yTrain = loadInput()#'snkifsefs ,kef', w2v.wordList, maxEncoderLength)
+	xTrain, yTrain, label_indicies = loadInput()#'snkifsefs ,kef', w2v.wordList, maxEncoderLength)
 	#np.save('Seq2SeqXTrain.npy', xTrain)
 	#np.save('Seq2SeqYTrain.npy', yTrain)
 

@@ -24,16 +24,16 @@ zeroVector = np.zeros((1), dtype='int32')
 # global variables
 numIterations = 500000
 BATCH_SIZE = 10
-maxEncoderLength = 72 # somthing big
+maxEncoderLength = 25 #arb
 maxDecoderLength = 36
 
 
 # input
-encoder_inputs, decoder_inputs, decoder_labels, feed_previous = model.io()				# using the feed dictionary
+encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies = model.io()				# using the feed dictionary
 # seq2seq model
-decoder_outputs, decoderPrediction = model.inference(encoder_inputs, decoder_inputs, feed_previous, w2v.vocabSize)
+decoder_outputs, decoder_logits, decoder_prediction = model.inference(encoder_inputs_embedded, decoder_inputs_embedded)
 # loss
-loss = model.loss(decoder_outputs, decoder_labels, w2v.vocabSize)
+loss = model.loss(decoder_targets_indicies, decoder_logits)
 # training operation
 train_step = model.optimise(loss)
 
@@ -59,14 +59,20 @@ with tf.Session() as sess:
 
 	for i in range(numIterations):
 
-		encoderTrain, decoderTargetTrain, decoderInputTrain = data_input.getTrainingBatch(data_input.xTrain, data_input.yTrain, BATCH_SIZE, maxEncoderLength)
+		encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTrainingBatch(data_input.xTrain, data_input.yTrain, BATCH_SIZE, data_input.label_indicies)
 		# encoder train [batch_size*length_of_sequence*20] !! need to pad		this one is 153
-		feedDict = {encoder_inputs[t]: encoderTrain[t] for t in range(maxEncoderLength)}
-		feedDict.update({decoder_labels[t]: decoderTargetTrain[t] for t in range(maxDecoderLength)})
-		feedDict.update({decoder_inputs[t]: decoderInputTrain[t] for t in range(maxDecoderLength)})
-		feedDict.update({feed_previous: False})
+		temp = [encoderTrain[t][0:maxEncoderLength] for t in range(len(encoderTrain))]
+		feedDict = {encoder_inputs_embedded: temp}
+		feedDict.update({decoder_targets_indicies: label_inds})
+		feedDict.update({decoder_inputs_embedded: decoderTargetTrain})
 
-		curLoss, _, pred = sess.run([loss, train_step, decoderPrediction], feed_dict=feedDict)
+		try:
+			curLoss, _, pred = sess.run([loss, train_step, decoder_prediction], feed_dict=feedDict)
+		except ValueError:
+			print('EEERRRROOORRRRR!')
+
+
+
 
 		if i % 50 == 0:
 			print('Current loss:', curLoss, 'at iteration', i)
@@ -75,18 +81,3 @@ with tf.Session() as sess:
 
 		if i % 10000 == 0 and i != 0:
 			savePath = saver.save(sess, "models/pretrained_seq2seq.ckpt", global_step=i)
-
-		"""
-		if i % 25 == 0 and i != 0:
-			num = randint(0, len(encoderTestStrings) - 1)
-			print()
-			encoderTestStrings[num]
-			inputVector = data_input.getTestInput(encoderTestStrings[num], w2v.wordList, maxEncoderLength);
-			feedDict = {encoder_inputs[t]: inputVector[t] for t in range(maxEncoderLength)}
-			feedDict.update({decoder_labels[t]: zeroVector for t in range(maxDecoderLength)})
-			feedDict.update({decoder_inputs[t]: zeroVector for t in range(maxDecoderLength)})
-			feedDict.update({feed_previous: True})
-			ids = (sess.run(decoderPrediction, feed_dict=feedDict))
-			print()
-			w2v.idsToSentence(ids, w2v.wordList)
-		"""

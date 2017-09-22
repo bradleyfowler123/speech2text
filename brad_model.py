@@ -1,132 +1,58 @@
 import tensorflow as tf
-import helpers
-import numpy as np
+import brad_w2v as w2v
+# variables
+ENCODER_MAX_TIME = 25#200			# max length of input signal (in vectorised form)
+ENCODER_INPUT_DEPTH = 20		# LENGTH
 
-def temp():
-	# variables
-	input_vocab_size = 20
-	input_embedding_size = 65
+DECODER_MAX_TIME = 36			# max scentence length (in wordvectors)
+output_vocab_size = w2v.vocabSize 			# how many words in your vocab
+DECODER_INPUT_DEPTH = 50  		# len(a_word_vector)
 
-	output_vocab_size = 10 # how many words in your vocab
-	output_embedding_size = 65#50  # = len(a_word_vector)
+encoder_hidden_units = 100				# mmm
+decoder_hidden_units = 100
 
-	encoder_hidden_units = 65				# mmm
-	decoder_hidden_units = 65#50
-
-
-	# placeholders
-	encoder_inputs = tf.placeholder(shape=(None, None), dtype=tf.int32, name='encoder_inputs')    # encoder_inputs int32 tensor is shaped [batch_size, encoder_max_time]
-	decoder_targets = tf.placeholder(shape=(None, None), dtype=tf.int32, name='decoder_targets')
-	decoder_inputs = tf.placeholder(shape=(None, None), dtype=tf.int32, name='decoder_inputs')
-	print(encoder_inputs)
-
-	# embedding
-	embeddings_encoder = tf.Variable(tf.random_uniform([input_vocab_size, input_embedding_size], -1.0, 1.0), dtype=tf.float32)
-	encoder_inputs_embedded = tf.nn.embedding_lookup(embeddings_encoder, encoder_inputs)
-	print(encoder_inputs_embedded)								# [batch_size, max_time, depth] [batch_size*20*length_of_sequence]
-	embeddings_decoder = tf.Variable(tf.random_uniform([output_vocab_size, output_embedding_size], -1.0, 1.0), dtype=tf.float32)
-	decoder_inputs_embedded = tf.nn.embedding_lookup(embeddings_decoder, decoder_inputs)
-	print(decoder_inputs_embedded)								# [batch_size, max_time, depth]
-
-	# encoder
-	encoder_cell = tf.nn.rnn_cell.BasicLSTMCell(encoder_hidden_units)
-	_, encoder_final_state = tf.nn.dynamic_rnn(encoder_cell, encoder_inputs_embedded, dtype=tf.float32, time_major=False)			# replace later with bidirectional dynamic rnn
-	print(encoder_final_state)
-									# encoder_final_state is also called "thought vector". We will use it as initial state for the Decoder. In seq2seq without attention this is the only point where Encoder passes information to Decoder
-
-
-	# decoder
-	decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(decoder_hidden_units)
-	decoder_outputs, decoder_final_state = tf.nn.dynamic_rnn(decoder_cell, decoder_inputs_embedded, initial_state=encoder_final_state, dtype=tf.float32, time_major=False, scope="plain_decoder")			# replace later with bidirectional dynamic rnn
-	print(decoder_outputs)
-
-	# output
-	decoder_logits = tf.contrib.layers.linear(decoder_outputs, output_vocab_size)
-	decoder_prediction = tf.argmax(decoder_logits, 2)
-	print(decoder_prediction)
-
-	#optimiser
-	stepwise_cross_entropy = tf.nn.softmax_cross_entropy_with_logits(
-		labels=tf.one_hot(decoder_targets, depth=output_vocab_size, dtype=tf.float32),
-		logits=decoder_logits,
-	)
-
-	# loss
-	loss = tf.reduce_mean(stepwise_cross_entropy)
-	train_op = tf.train.AdamOptimizer().minimize(loss)
-
-
-	with tf.Session() as sess:
-		sess.run(tf.global_variables_initializer())
-		batch_ = [[6], [3, 4], [9, 8, 7]]
-
-		batch_, batch_length_ = helpers.batch(batch_)
-		print('batch_encoded:\n' + str(batch_))
-
-		din_, dlen_ = helpers.batch(np.ones(shape=(3, 1), dtype=np.int32),
-									max_sequence_length=4)
-		print('decoder inputs:\n' + str(din_))
-
-		pred_ = sess.run(decoder_prediction,
-						 feed_dict={
-							 encoder_inputs: batch_,
-							 decoder_inputs: din_,
-						 })
-		print('decoder predictions:\n' + str(pred_))
-
-
-
-
-
-
-
-if __name__ == '__main__':
-	temp()
-
-
-# Hyperparamters
-maxEncoderLength = 36# somthing bigger
-maxDecoderLength = 36
-lstmUnits = 112
-embeddingDim = lstmUnits
-numLayersLSTM = 3
-
+BATCH_SIZE = 10
 
 
 tf.reset_default_graph()
 
 
 def io():
-	# Create the placeholders
-	encoder_inputs = [tf.placeholder(tf.int32, shape=(None,), name='enc_inps') for _ in range(maxEncoderLength)]
-	decoder_inputs = [tf.placeholder(tf.int32, shape=(None,), name='dec_inps') for _ in range(maxDecoderLength)]
-	decoder_labels = [tf.placeholder(tf.int32, shape=(None,), name='dec_lbs') for _ in range(maxDecoderLength)]
-	feed_previous = tf.placeholder(tf.bool)
+	# placeholders
+	#encoder_inputs = tf.placeholder(shape=(None, None), dtype=tf.float32, name='encoder_inputs')    # encoder_inputs int32 tensor is shaped [batch_size, encoder_max_time]
+	encoder_inputs_embedded = tf.placeholder(shape=(BATCH_SIZE, ENCODER_MAX_TIME, ENCODER_INPUT_DEPTH), dtype=tf.float32, name='encoder_inputs')  # [batch_size*length_of_sequence*20]
+	decoder_targets_indicies = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME), dtype=tf.int32, name='decoder_targets')	# [batch_size, max_time36]
+	decoder_inputs_embedded = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME, DECODER_INPUT_DEPTH), dtype=tf.float32, name='decoder_inputs')
 
-	return encoder_inputs, decoder_inputs, decoder_labels, feed_previous
-
-
-def inference(encoder_inputs, decoder_inputs, feed_previous, vocabSize):
-	single_lstm_cell = tf.nn.rnn_cell.BasicLSTMCell(128)
-	encoder_lstm_cell = tf.nn.rnn_cell.MultiRNNCell([single_lstm_cell] * numLayersLSTM)
-
-	decoder_outputs = tf.contrib.legacy_seq2seq.rnn_seq2seq(encoder_inputs,	decoder_inputs, single_lstm_cell,
-																						vocabSize, vocabSize,
-																						feed_previous=feed_previous)
-	decoderPrediction = tf.argmax(decoder_outputs, 2, name='dec_prd')
-
-	return decoder_outputs, decoderPrediction
+	return encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies
 
 
+def inference(encoder_inputs_embedded, decoder_inputs_embedded):
 
-def loss(decoder_outputs, decoder_labels, vocabSize):
-	# take output vector and map to words using pre-trained word2vec
+	#encoder_lstm_cell = tf.nn.rnn_cell.MultiRNNCell([single_lstm_cell] * numLayersLSTM)
+
+	# encoder
+	encoder_cell = tf.nn.rnn_cell.BasicLSTMCell(encoder_hidden_units)
+	_, encoder_final_state = tf.nn.dynamic_rnn(encoder_cell, encoder_inputs_embedded, dtype=tf.float32, time_major=False)  # replace later with bidirectional dynamic rnn
+
+	# decoder
+	decoder_cell = tf.nn.rnn_cell.BasicLSTMCell(decoder_hidden_units)
+	decoder_outputs, decoder_final_state = tf.nn.dynamic_rnn(decoder_cell, decoder_inputs_embedded, initial_state=encoder_final_state, dtype=tf.float32, time_major=False, scope="plain_decoder")  # replace later with bidirectional dynamic rnn
+
+	# output
+	decoder_logits = tf.contrib.layers.linear(decoder_outputs, output_vocab_size)	# (BATCH_SIZE, DECODER_MAX_TIME, output_vocab_size)
+	decoder_prediction = tf.argmax(decoder_logits, 2)		# (BATCH_SIZE, DECODER_MAX_TIME)		- pick maximum liklihood words for each position (the index)
+
+	return decoder_outputs, decoder_logits, decoder_prediction
+
+
+
+def loss(decoder_targets, decoder_logits):										# decoder_targets (BATCH_SIZE, DECODER_MAX_TIME) containing the indicies of the correct words
 	with tf.name_scope('performance_metrics'):
-		loss_weights = [tf.ones_like(l, dtype=tf.float32) for l in decoder_labels]
-
-		prediction_loss = tf.contrib.legacy_seq2seq.sequence_loss(decoder_outputs, decoder_labels, loss_weights, vocabSize)
-
-		total_loss = prediction_loss
+		# loss
+		one_hot = tf.one_hot(decoder_targets, depth=output_vocab_size, dtype=tf.float32)
+		stepwise_cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot, logits=decoder_logits)
+		total_loss = tf.reduce_mean(stepwise_cross_entropy)
 		tf.summary.scalar('summaries/total_loss', total_loss)
 
 	return total_loss
