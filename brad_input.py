@@ -4,7 +4,6 @@ import os
 import brad_w2v as w2v
 import csv
 
-maxEncoderLength = 72
 
 def createTrainingMatrices(conversationFileName, wList, maxLen):
 	conversationDictionary = np.load(conversationFileName).item()
@@ -58,14 +57,12 @@ def getTrainingBatch(localXTrain, localYTrain, localBatchSize, maxLen):
 
 
 	# Lagged labels are for the training input into the decoder
-	laggedLabels = []
-	for example in labels:
-		laggedLabels = np.roll(example,1)
+	laggedLabels = [np.roll(example,1) for example in labels]
 
 	# Need to transpose these
-	reversedList = np.asarray(reversedList).T.tolist()
-	labels = np.asarray(labels).T.tolist()
-	laggedLabels = np.asarray(laggedLabels).T.tolist()
+	#reversedList = np.asarray(reversedList).T.tolist()
+	#labels = np.asarray(labels).T.tolist()
+	#laggedLabels = np.asarray(laggedLabels).T.tolist()
 	return reversedList, labels, laggedLabels
 
 def translateToSentences(inputs, wList, encoder=False):
@@ -109,14 +106,14 @@ def loadInput():
 		reader = csv.reader(csv_file, delimiter=',')
 		for row in reader:
 			# mfcc file
-			mfcc2D = np.load('asset/data/preprocess/mfcc/' + row[0] + '.npy')
-			mfcc_file.append(mfcc2D.flatten())
+			mfcc2D = np.load('asset/data/preprocess/mfcc/' + row[0] + '.npy').T
+			mfcc_file.append(mfcc2D)		# no .flattern()
 			# label info ( convert to string object for variable-length support )
 			label.append([w2v.wordVectors[int(index)] for index in row[1:]])
 
 
-	return mfcc_file, label
-
+	return mfcc_file, label			# each is a list of 43663 items: labels item is 36 length list of vectors of size 50
+									# input item is an array 20x65 of floats. equvilent to length 20 list of 65 vectors
 
 if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
 	xTrain = np.load('Seq2SeqXTrain.npy')

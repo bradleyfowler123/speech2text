@@ -23,9 +23,9 @@ zeroVector = np.zeros((1), dtype='int32')
 
 # global variables
 numIterations = 500000
-BATCH_SIZE = 24
-maxEncoderLength = 24
-maxDecoderLength = 72
+BATCH_SIZE = 10
+maxEncoderLength = 72 # somthing big
+maxDecoderLength = 36
 
 
 # input
@@ -60,6 +60,7 @@ with tf.Session() as sess:
 	for i in range(numIterations):
 
 		encoderTrain, decoderTargetTrain, decoderInputTrain = data_input.getTrainingBatch(data_input.xTrain, data_input.yTrain, BATCH_SIZE, maxEncoderLength)
+		# encoder train [batch_size*length_of_sequence*20] !! need to pad		this one is 153
 		feedDict = {encoder_inputs[t]: encoderTrain[t] for t in range(maxEncoderLength)}
 		feedDict.update({decoder_labels[t]: decoderTargetTrain[t] for t in range(maxDecoderLength)})
 		feedDict.update({decoder_inputs[t]: decoderInputTrain[t] for t in range(maxDecoderLength)})

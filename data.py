@@ -18,7 +18,7 @@ _data_path = 'asset/data/'
 # okay need to change this to our word to index mapping
 index2byte = np.load('trained_w2v_embedding/wordsList.npy').tolist()			# note there is no space! you don't need one since each vector is a standalone word
 index2byte.append('<pad>')
-index2byte.append('<EOS>')
+index2byte.append('<EOS>')										# note this means end of scentence however using here for symbol error when word outside of vocab
 
 """
 # index to byte mapping
@@ -28,7 +28,7 @@ index2byte = ['<EMP>', ' ', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
 """
 
 
-MAX_LENGTH = 32				# max scentence length is 32
+MAX_LENGTH = 36			# max scentence length is 36
 
 # byte to index mapping
 byte2index = {}
