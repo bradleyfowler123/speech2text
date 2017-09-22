@@ -1,34 +1,18 @@
-import sugartensor as tf
 import numpy as np
-import csv
 import string
 
+# ----- CURENTLY - functions to handle text embedding conversions
+# TODO - merge with brad_w2v.py or brad_input.py or both
 
-__author__ = 'namju.kim@kakaobrain.com'
-
-
-# default data path
-_data_path = 'asset/data/'
-
-#
-# vocabulary table
-#
+# GLOBAL Variables
+MAX_LENGTH = 36																											# max scentence length is 36
+_data_path = 'asset/data/' 																								# default data path
 
 
-# okay need to change this to our word to index mapping
-index2byte = np.load('trained_w2v_embedding/wordsList.npy').tolist()			# note there is no space! you don't need one since each vector is a standalone word
+index2byte = np.load('trained_w2v_embedding/wordsList.npy').tolist()													# note there is no space! you don't need one since each vector is a standalone word
 index2byte.append('<pad>')
-index2byte.append('<EOS>')										# note this means end of scentence however using here for symbol error when word outside of vocab
+index2byte.append('<EOS>')																								# note this means end of scentence however using here for symbol error when word outside of vocab
 
-"""
-# index to byte mapping
-index2byte = ['<EMP>', ' ', 'a', 'b', 'c', 'd', 'e', 'f', 'g',
-			  'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q',
-			  'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z']
-"""
-
-
-MAX_LENGTH = 36			# max scentence length is 36
 
 # byte to index mapping
 byte2index = {}
@@ -72,6 +56,13 @@ def index2str(index_list):
 def print_index(indices):
 	for index_list in indices:
 		print(index2str(index_list))
+
+
+
+
+"""		NOT IN USE
+import sugartensor as tf
+import csv
 
 
 # real-time wave to mfcc conversion function
@@ -154,3 +145,6 @@ class SpeechCorpus(object):
 		# print info
 		tf.sg_info('%s set loaded.(total data=%d, total batch=%d)'
 				   % (set_name.upper(), len(label), self.num_batch))
+
+
+"""

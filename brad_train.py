@@ -1,32 +1,23 @@
 import tensorflow as tf
-import numpy as np
 import datetime
-from random import randint
 import brad_model as model
-import brad_w2v as w2v
 import brad_input as data_input
 
 
-"""
-# Some test strings that we'll use as input at intervals during training
-encoderTestStrings = ["whats up bro",
-					  "hi",
-					  "hey how are you",
-					  "that girl was really cute tho",
-					  "that dodgers game was awesome"
-					  ]
 
-zeroVector = np.zeros((1), dtype='int32')
-"""
+# ----------- GLOBAL VARIABLES ------------ #
 
-# ----------------- START ---------------
-
-# global variables
-numIterations = 500000
+# Shared Global Variables
 BATCH_SIZE = 10
-maxEncoderLength = 25 #arb
+maxEncoderLength = 25 			#arbitary but less than shortest input vector of sound
 maxDecoderLength = 36
 
+# Unique Global variables
+NUM_INTERATIONS = 500000
+
+
+
+# ----------- SEQ2SEQ MODEL -------------- #
 
 # input
 encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies = model.io()				# using the feed dictionary
@@ -39,13 +30,9 @@ train_step = model.optimise(loss)
 
 
 
-
+# ----------- initialisations ------------ #
+init_op = tf.group(tf.tables_initializer(), tf.global_variables_initializer(),tf.local_variables_initializer())  		# Create the graph, etc.
 saver = tf.train.Saver()
-
-
-# initialisations
-init_op = tf.group(tf.tables_initializer(), tf.global_variables_initializer(),
-				   tf.local_variables_initializer())  # Create the graph, etc.
 
 with tf.Session() as sess:
 
@@ -57,7 +44,9 @@ with tf.Session() as sess:
 	writer = tf.summary.FileWriter(LOG_DIR, sess.graph)
 
 
-	for i in range(numIterations):
+
+# ----------- TRAINING LOOP -------------- #
+	for i in range(NUM_INTERATIONS):
 
 		encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTrainingBatch(data_input.xTrain, data_input.yTrain, BATCH_SIZE, data_input.label_indicies)
 		# encoder train [batch_size*length_of_sequence*20] !! need to pad		this one is 153
@@ -72,12 +61,11 @@ with tf.Session() as sess:
 			print('EEERRRROOORRRRR!')
 
 
-
-
 		if i % 50 == 0:
 			print('Current loss:', curLoss, 'at iteration', i)
 			summary = sess.run(merged, feed_dict=feedDict)
 			writer.add_summary(summary, i)
 
 		if i % 10000 == 0 and i != 0:
+			print('Saving Checkpoint...')
 			savePath = saver.save(sess, "models/pretrained_seq2seq.ckpt", global_step=i)
