@@ -7,7 +7,7 @@ import brad_w2v as w2v
 
 # Shared Global Variables
 BATCH_SIZE = 10
-ENCODER_MAX_TIME = 25							# max length of input signal (in vectorised form)
+ENCODER_MAX_TIME = 200							# max length of input signal (in vectorised form)
 DECODER_MAX_TIME = 36							# max scentence length (in wordvectors)
 
 # Unique Global Variables
@@ -55,8 +55,16 @@ def loss(decoder_targets, decoder_logits):
 		# loss
 		one_hot = tf.one_hot(decoder_targets, depth=OUTPUT_VOCAB_SIZE, dtype=tf.float32)								# decoder_targets (BATCH_SIZE, DECODER_MAX_TIME) containing the indicies of the correct words
 		stepwise_cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot, logits=decoder_logits)
+
+		# ------------ Tensorboard --------------- #
 		total_loss = tf.reduce_mean(stepwise_cross_entropy)
 		tf.summary.scalar('summaries/total_loss', total_loss)
+
+		with tf.name_scope('correct_prediction'):
+			correct_prediction = tf.equal(decoder_logits, one_hot)
+			with tf.name_scope('accuracy'):
+				accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
+		tf.summary.scalar('accuracy', accuracy)  # log model output
 
 	return total_loss
 

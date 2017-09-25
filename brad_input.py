@@ -4,47 +4,13 @@ import os
 import brad_w2v as w2v
 import csv
 
+# ----------- GLOBAL VARIABLES ------------ #
 
-def createTrainingMatrices(conversationFileName, wList, maxLen):
-	conversationDictionary = np.load(conversationFileName).item()
-	numExamples = len(conversationDictionary)
-	xTrain = np.zeros((numExamples, maxLen), dtype='int32')
-	yTrain = np.zeros((numExamples, maxLen), dtype='int32')
-	for index,(key,value) in enumerate(conversationDictionary.iteritems()):
-		# Will store integerized representation of strings here (initialized as padding)
-		encoderMessage = np.full((maxLen), wList.index('<pad>'), dtype='int32')
-		decoderMessage = np.full((maxLen), wList.index('<pad>'), dtype='int32')
-		# Getting all the individual words in the strings
-		keySplit = key.split()
-		valueSplit = value.split()
-		keyCount = len(keySplit)
-		valueCount = len(valueSplit)
-		# Throw out sequences that are too long
-		if (keyCount > (maxLen - 1) or valueCount > (maxLen - 1)):
-			continue
-		# Integerize the encoder string
-		for keyIndex, word in enumerate(keySplit):
-			try:
-				encoderMessage[keyIndex] = wList.index(word)
-			except ValueError:
-				# TODO: This isnt really the right way to handle this scenario
-				encoderMessage[keyIndex] = 0
-		encoderMessage[keyIndex + 1] = wList.index('<EOS>'
-												   )
-		# Integerize the decoder string
-		for valueIndex, word in enumerate(valueSplit):
-			try:
-				decoderMessage[valueIndex] = wList.index(word)
-			except ValueError:
-				decoderMessage[valueIndex] = 0
-		decoderMessage[valueIndex + 1] = wList.index('<EOS>')
-		xTrain[index] = encoderMessage
-		yTrain[index] = decoderMessage
-	# Remove rows with all zeros
-	yTrain = yTrain[~np.all(yTrain == 0, axis=1)]
-	xTrain = xTrain[~np.all(xTrain == 0, axis=1)]
-	numExamples = xTrain.shape[0]
-	return numExamples, xTrain, yTrain
+# Shared Global Variables
+ENCODER_MAX_TIME = 200							# max length of input signal (in vectorised form)
+ENCODER_INPUT_DEPTH = 20
+
+
 
 def getTrainingBatch(localXTrain, localYTrain, localBatchSize, local_label_indicies):
 	num = randint(0,numTrainingExamples - localBatchSize - 1)
@@ -66,41 +32,8 @@ def getTrainingBatch(localXTrain, localYTrain, localBatchSize, local_label_indic
 	#laggedLabels = np.asarray(laggedLabels).T.tolist()
 	return reversedList, labels, laggedLabels, label_inds
 
-def translateToSentences(inputs, wList, encoder=False):
-	EOStokenIndex = wList.index('<EOS>')
-	padTokenIndex = wList.index('<pad>')
-	numStrings = len(inputs[0])
-	numLengthOfStrings = len(inputs)
-	listOfStrings = [''] * numStrings
-	for mySet in inputs:
-		for index,num in enumerate(mySet):
-			if (num != EOStokenIndex and num != padTokenIndex):
-				if (encoder):
-					# Encodings are in reverse!
-					listOfStrings[index] = wList[num] + " " + listOfStrings[index]
-				else:
-					listOfStrings[index] = listOfStrings[index] + " " + wList[num]
-	listOfStrings = [string.strip() for string in listOfStrings]
-	return listOfStrings
 
-def getTestInput(inputMessage, wList, maxLen):
-	encoderMessage = np.full((maxLen), wList.index('<pad>'), dtype='int32')
-	inputSplit = inputMessage.lower().split()
-	for index,word in enumerate(inputSplit):
-		try:
-			encoderMessage[index] = wList.index(word)
-		except ValueError:
-			continue
-	encoderMessage[index + 1] = wList.index('<EOS>')
-	encoderMessage = encoderMessage[::-1]
-	encoderMessageList=[]
-	for num in encoderMessage:
-		encoderMessageList.append([num])
-	return encoderMessageList
-
-
-numTrainingExamples = 39410
-def loadInput():
+def createTrainingMatrices():
 	# load meta file
 	label, label_indicies, mfcc_file = [], [], []
 	with open('asset/data/preprocess/meta/train.csv') as csv_file:
@@ -108,24 +41,33 @@ def loadInput():
 		for row in reader:
 			# mfcc file
 			mfcc2D = np.load('asset/data/preprocess/mfcc/' + row[0] + '.npy').T
-			mfcc_file.append(mfcc2D)		# no .flattern()
-			# label info ( convert to string object for variable-length support )
+
+			# pad end with zeros
+			if len(mfcc2D) < ENCODER_MAX_TIME:
+				temp = np.zeros((ENCODER_MAX_TIME-len(mfcc2D),ENCODER_INPUT_DEPTH))
+				mfcc2D = np.append(mfcc2D, temp, axis=0)
+			else:
+				mfcc2D = mfcc2D[0:ENCODER_MAX_TIME, :]
+
+			mfcc_file.append(mfcc2D)
 			label_indicies.append([int(index) for index in row[1:]])
 			label.append([w2v.wordVectors[int(index)] for index in row[1:]])
 
 
 	return mfcc_file, label, label_indicies			# each is a list of 43663 items: labels item is 36 length list of vectors of size 50
-									# input item is an array 20x65 of floats. equvilent to length 20 list of size(sequence_length) vectors
+									# input item is an array 20xn of floats. equvilent to length 20 list of size(sequence_length) vectors
 
 if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
 	xTrain = np.load('Seq2SeqXTrain.npy')
 	yTrain = np.load('Seq2SeqYTrain.npy')
-	print('Finished loading training matrices')
 	numTrainingExamples = xTrain.shape[0]
+
+	print('Finished loading training matrices')
 else:
 	# get input audio as vectors and store in xtrain
 	# get labels for audio and store in ytrain
-	xTrain, yTrain, label_indicies = loadInput()#'snkifsefs ,kef', w2v.wordList, maxEncoderLength)
+	xTrain, yTrain, label_indicies = createTrainingMatrices()
+	numTrainingExamples = len(label_indicies)
 	#np.save('Seq2SeqXTrain.npy', xTrain)
 	#np.save('Seq2SeqYTrain.npy', yTrain)
 

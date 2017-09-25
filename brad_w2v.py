@@ -25,18 +25,11 @@ vocabSize = vocabSize + 2
 
 
 
-def idsToSentence(ids, wList):
-	EOStokenIndex = wList.index('<EOS>')
-	padTokenIndex = wList.index('<pad>')
-	myStr = ""
-	listOfResponses=[]
-	for num in ids:
-		if num[0] == EOStokenIndex or num[0] == padTokenIndex:
-			listOfResponses.append(myStr)
-			myStr = ""
-		else:
-			myStr = myStr + wList[num[0]] + " "
-	if myStr:
-		listOfResponses.append(myStr)
-	listOfResponses = [i for i in listOfResponses if i]
-	return listOfResponses
+def idsToSentence(ids):
+	scentence = ""
+	for word_id in ids:
+		if wordList[word_id] == '<EOS>':
+			scentence = scentence + " " + "err"
+		elif wordList[word_id] != '<pad>':
+			scentence = scentence + " " + wordList[word_id].decode("utf-8")
+	return scentence
