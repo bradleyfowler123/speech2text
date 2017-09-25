@@ -7,7 +7,7 @@ import brad_w2v as w2v
 
 # Shared Global Variables
 BATCH_SIZE = 10
-ENCODER_MAX_TIME = 200							# max length of input signal (in vectorised form)
+ENCODER_MAX_TIME = 20							# max length of input signal (in vectorised form)
 DECODER_MAX_TIME = 36							# max scentence length (in wordvectors)
 
 # Unique Global Variables
@@ -25,10 +25,11 @@ tf.reset_default_graph()
 
 def io():		# The input to our model (encoder) is the pre-embedding sound vector. The input into the decoder is the time shifted word embeddings of the text
 	encoder_inputs_embedded = tf.placeholder(shape=(BATCH_SIZE, ENCODER_MAX_TIME, ENCODER_INPUT_DEPTH), dtype=tf.float32, name='encoder_inputs')  # [batch_size*length_of_sequence*20]
-	decoder_targets_indicies = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME), dtype=tf.int32, name='decoder_targets')	# [batch_size, max_time36]
+	decoder_targets_indicies = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME), dtype=tf.int64, name='decoder_targets')	# [batch_size, max_time36]
 	decoder_inputs_embedded = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME, DECODER_INPUT_DEPTH), dtype=tf.float32, name='decoder_inputs')
+	embed_normed = tf.constant(w2v.wordVectorsNormalised, dtype=tf.float32)
 
-	return encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies
+	return encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies, embed_normed
 
 
 def inference(encoder_inputs_embedded, decoder_inputs_embedded):
@@ -44,33 +45,45 @@ def inference(encoder_inputs_embedded, decoder_inputs_embedded):
 	decoder_outputs, decoder_final_state = tf.nn.dynamic_rnn(decoder_cell, decoder_inputs_embedded, initial_state=encoder_final_state, dtype=tf.float32, time_major=False, scope="plain_decoder")  # replace later with bidirectional dynamic rnn
 
 	# output
-	decoder_logits = tf.contrib.layers.linear(decoder_outputs, OUTPUT_VOCAB_SIZE)										# (BATCH_SIZE, DECODER_MAX_TIME, OUTPUT_VOCAB_SIZE)
-	decoder_prediction = tf.argmax(decoder_logits, 2)																	# (BATCH_SIZE, DECODER_MAX_TIME)		- pick maximum liklihood words for each position (the index)
-
-	return decoder_outputs, decoder_logits, decoder_prediction
+	decoder_logits = tf.contrib.layers.linear(decoder_outputs, DECODER_INPUT_DEPTH)										# (BATCH_SIZE, DECODER_MAX_TIME, OUTPUT_VOCAB_SIZE)
 
 
-def loss(decoder_targets, decoder_logits):
+	return decoder_outputs, decoder_logits
+
+
+def loss(decoder_targets, decoder_logits, embed_normed):
+
+	def cs(logits):
+		shifted_cosine = tf.matmul(logits, tf.transpose(embed_normed)) + 1	# 36*50 x 50*400002 = 36*400002
+		return -1* shifted_cosine**4
+
+
 	with tf.name_scope('performance_metrics'):
 		# loss
-		one_hot = tf.one_hot(decoder_targets, depth=OUTPUT_VOCAB_SIZE, dtype=tf.float32)								# decoder_targets (BATCH_SIZE, DECODER_MAX_TIME) containing the indicies of the correct words
-		stepwise_cross_entropy = tf.nn.softmax_cross_entropy_with_logits(labels=one_hot, logits=decoder_logits)
+		decoder_logits_normalised = tf.nn.l2_normalize(decoder_logits, dim=2)
+		cosine_similarity = tf.map_fn(cs, decoder_logits_normalised)
+		#cosine_similarity = tf.losses.cosine_distance(embed_normed, normed_embedding, dim=2)
+
+		decoder_prediction = tf.argmax(cosine_similarity, 2)  # shape [batch_size, DECODER_MAX_TIME], type int64   # (BATCH_SIZE, DECODER_MAX_TIME)		- pick maximum liklihood words for each position (the index)
+
 
 		# ------------ Tensorboard --------------- #
-		total_loss = tf.reduce_mean(stepwise_cross_entropy)
+		total_loss = tf.reduce_mean(cosine_similarity)
+
 		tf.summary.scalar('summaries/total_loss', total_loss)
 
+
 		with tf.name_scope('correct_prediction'):
-			correct_prediction = tf.equal(decoder_logits, one_hot)
+			correct_prediction = tf.equal(decoder_prediction, decoder_targets)
 			with tf.name_scope('accuracy'):
 				accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 		tf.summary.scalar('accuracy', accuracy)  # log model output
 
-	return total_loss
+	return total_loss, decoder_prediction
 
 
 def optimise(total_loss):
 	with tf.name_scope('train'):
-		train_step = tf.train.AdamOptimizer(1e-4).minimize(total_loss)
+		train_step = tf.train.AdamOptimizer(1e-3).minimize(total_loss)
 
 	return train_step

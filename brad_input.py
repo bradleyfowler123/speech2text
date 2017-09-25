@@ -7,7 +7,7 @@ import csv
 # ----------- GLOBAL VARIABLES ------------ #
 
 # Shared Global Variables
-ENCODER_MAX_TIME = 200							# max length of input signal (in vectorised form)
+ENCODER_MAX_TIME = 20							# max length of input signal (in vectorised form)
 ENCODER_INPUT_DEPTH = 20
 
 
@@ -17,20 +17,21 @@ def getTrainingBatch(localXTrain, localYTrain, localBatchSize, local_label_indic
 	arr = localXTrain[num:num + localBatchSize]
 	labels = localYTrain[num:num + localBatchSize]
 	label_inds = local_label_indicies[num:num + localBatchSize]
+
 	# Reversing the order of encoder string apparently helps as per 2014 paper
-	reversedList = list(arr)
-	for index,example in enumerate(reversedList):
-		reversedList[index] = list(reversed(example))
+	#reversedList = list(arr)
+	#for index,example in enumerate(reversedList):
+	#	reversedList[index] = list(reversed(example))
 
 
 	# Lagged labels are for the training input into the decoder
-	laggedLabels = [np.roll(example,1) for example in labels]
+	laggedLabels = [np.roll(example,-1) for example in labels]
 
 	# Need to transpose these
 	#reversedList = np.asarray(reversedList).T.tolist()
 	#labels = np.asarray(labels).T.tolist()
 	#laggedLabels = np.asarray(laggedLabels).T.tolist()
-	return reversedList, labels, laggedLabels, label_inds
+	return arr, labels, laggedLabels, label_inds
 
 
 def createTrainingMatrices():

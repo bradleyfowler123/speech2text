@@ -9,7 +9,7 @@ import brad_input as data_input
 
 # Shared Global Variables
 BATCH_SIZE = 10
-ENCODER_MAX_TIME = 200 			#arbitary but less than shortest input vector of sound
+ENCODER_MAX_TIME = 20 			#arbitary but less than shortest input vector of sound
 DECODER_MAX_TIME = 36
 
 # Unique Global variables
@@ -20,11 +20,11 @@ NUM_INTERATIONS = 500000
 # ----------- SEQ2SEQ MODEL -------------- #
 
 # input
-encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies = model.io()				# using the feed dictionary
+encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies, embed_normed = model.io()				# using the feed dictionary
 # seq2seq model
-decoder_outputs, decoder_logits, decoder_prediction = model.inference(encoder_inputs_embedded, decoder_inputs_embedded)
+decoder_outputs, decoder_logits = model.inference(encoder_inputs_embedded, decoder_inputs_embedded)
 # loss
-loss = model.loss(decoder_targets_indicies, decoder_logits)
+loss, decoder_prediction = model.loss(decoder_targets_indicies, decoder_logits, embed_normed)
 # training operation
 train_step = model.optimise(loss)
 
@@ -54,6 +54,7 @@ with tf.Session() as sess:
 		feedDict.update({decoder_targets_indicies: label_inds})
 		feedDict.update({decoder_inputs_embedded: decoderTargetTrain})
 
+
 		try:
 			curLoss, _ = sess.run([loss, train_step], feed_dict=feedDict)
 		except ValueError:
@@ -64,8 +65,10 @@ with tf.Session() as sess:
 			print('Current loss:', curLoss, 'at iteration', i)
 			summary, pred = sess.run([merged, decoder_prediction], feed_dict=feedDict)
 			writer.add_summary(summary, global_step=i)
-			test = data_input.w2v.idsToSentence(pred[0])
-			print(test)
+
+			for j in range(BATCH_SIZE):
+				print(data_input.w2v.idsToSentence(pred[j]))
+
 
 		if i % 10000 == 0 and i != 0:
 			print('Saving Checkpoint...')

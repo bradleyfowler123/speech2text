@@ -16,6 +16,13 @@ EOSVector = np.ones((1, wordVecDimensions), dtype='int32')
 wordVectors = np.concatenate((wordVectors,padVector), axis=0)
 wordVectors = np.concatenate((wordVectors,EOSVector), axis=0)
 
+wordVectorsNormalised = np.zeros(wordVectors.shape)
+norms = np.linalg.norm(wordVectors,axis=1)
+for i in range(len(wordVectors)):
+	if norms[i] != 0:
+		wordVectorsNormalised[i] = wordVectors[i]/norms[i]
+
+
 # Need to modify the word list as well
 wordList.append('<pad>')
 wordList.append('<EOS>')
