@@ -1,7 +1,7 @@
 import numpy as np
 from random import randint
 import os
-import brad_w2v as w2v
+import wordEmbedding as w2v
 import csv
 
 
@@ -58,6 +58,11 @@ def createTrainingMatrices():
 
 	return mfcc_file, label, label_indicies			# each is a list of 43663 items: labels item is 36 length list of vectors of size 50
 									# input item is an array 20xn of floats. equvilent to length 20 list of size(sequence_length) vectors
+
+
+
+
+
 
 if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
 	xTrain = np.load('Seq2SeqXTrain.npy')

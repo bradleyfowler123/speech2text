@@ -1,7 +1,7 @@
 import tensorflow as tf
 import datetime
-import brad_model as model
-import brad_input as data_input
+import seq2seqModel as model
+import inputOps as data_input
 
 
 # ----------- GLOBAL VARIABLES ------------ #

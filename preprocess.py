@@ -3,14 +3,11 @@ import pandas as pd
 import glob
 import csv
 import librosa
-import data
+import wordEmbedding as w2v
 import os
 
 
-# ----- Function to pre-process the speach datasets -----
-
-
-__author__ = 'namju.kim@kakaobrain.com'
+# ----- Function to pre-process the speach datasets ----- #
 
 
 # data path
@@ -56,7 +53,7 @@ def process_vctk(csv_file):
         mfcc = librosa.feature.mfcc(wave, sr=16000)
 
         # get label index
-        label = data.str2index(open(_data_path + 'VCTK-Corpus/txt/%s/' % f[:4] + f + '.txt').read())
+        label = w2v.word2index(open(_data_path + 'VCTK-Corpus/txt/%s/' % f[:4] + f + '.txt').read())
 
         # save result ( exclude small mfcc data to prevent ctc loss )
         if len(label) < mfcc.shape[1]:
@@ -105,7 +102,7 @@ def process_libri(csv_file, category):
                         wave_files.append(wave_file)
 
                         # label index
-                        labels.append(data.str2index(' '.join(field[1:])))  # last column is text label
+                        labels.append(w2v.word2index(' '.join(field[1:])))  # last column is text label
 
     # save results
     for i, (wave_file, label) in enumerate(zip(wave_files, labels)):
@@ -164,7 +161,7 @@ def process_ted(csv_file, category):
                 wave_files.append(wave_file)
 
                 # label index
-                labels.append(data.str2index(' '.join(field[6:])))
+                labels.append(w2v.word2index(' '.join(field[6:])))
 
                 # start, end info
                 start, end = float(field[3]), float(field[4])
