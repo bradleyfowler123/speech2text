@@ -15,7 +15,7 @@ DECODER_INPUT_DEPTH = 50  						# len(a_word_vector)
 OUTPUT_VOCAB_SIZE = w2v.vocabSize 				# how many words in your vocab
 encoder_hidden_units = 100						# arbitary choice atm
 decoder_hidden_units = 100
-LOSS_TYPE = 'euclid'								# choose from: 'index', 'cosine', 'euclid'
+LOSS_TYPE = 'index'								# choose from: 'index', 'cosine', 'euclid'
 
 
 

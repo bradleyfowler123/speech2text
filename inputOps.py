@@ -13,11 +13,11 @@ ENCODER_INPUT_DEPTH = 20
 
 
 
-def getTrainingBatch(localXTrain, localYTrain, localBatchSize, local_label_indicies):
-	num = randint(0,numTrainingExamples - localBatchSize - 1)
-	arr = localXTrain[num:num + localBatchSize]
-	labels = localYTrain[num:num + localBatchSize]
-	label_inds = local_label_indicies[num:num + localBatchSize]
+def getTrainingBatch(batch_size):
+	num = randint(0, numTrainingExamples - batch_size - 1)
+	arr = X_TRAIN[num:num + batch_size]
+	labels = Y_TRAIN[num:num + batch_size]
+	label_inds = Y_TRAIN_IND[num:num + batch_size]
 
 	# Reversing the order of encoder string apparently helps as per 2014 paper
 	#reversedList = list(arr)
@@ -34,6 +34,18 @@ def getTrainingBatch(localXTrain, localYTrain, localBatchSize, local_label_indic
 	#laggedLabels = np.asarray(laggedLabels).T.tolist()
 	return arr, labels, laggedLabels, label_inds
 
+
+def getTestBatch(batch_size):
+	# sound data
+	arr = X_TRAIN[0:batch_size]
+
+	# labels
+	labels = Y_TRAIN[0:batch_size]
+	label_inds = Y_TRAIN_IND[0:batch_size]
+	laggedLabels = [np.roll(example,-1) for example in labels]
+
+
+	return arr, labels, laggedLabels, label_inds
 
 def createTrainingMatrices():
 	# load meta file
@@ -65,18 +77,18 @@ def createTrainingMatrices():
 
 
 if os.path.isfile('Seq2SeqXTrain.npy') and os.path.isfile('Seq2SeqYTrain.npy'):
-	xTrain = np.load('Seq2SeqXTrain.npy')
-	yTrain = np.load('Seq2SeqYTrain.npy')
-	numTrainingExamples = xTrain.shape[0]
+	X_TRAIN = np.load('Seq2SeqXTrain.npy')
+	Y_TRAIN = np.load('Seq2SeqYTrain.npy')
+	numTrainingExamples = X_TRAIN.shape[0]
 
 	print('Finished loading training matrices')
 else:
 	# get input audio as vectors and store in xtrain
 	# get labels for audio and store in ytrain
-	xTrain, yTrain, label_indicies = createTrainingMatrices()
-	numTrainingExamples = len(label_indicies)
-	#np.save('Seq2SeqXTrain.npy', xTrain)
-	#np.save('Seq2SeqYTrain.npy', yTrain)
+	X_TRAIN, Y_TRAIN, Y_TRAIN_IND = createTrainingMatrices()
+	numTrainingExamples = len(Y_TRAIN_IND)
+	#np.save('Seq2SeqXTrain.npy', X_TRAIN)
+	#np.save('Seq2SeqYTrain.npy', Y_TRAIN)
 
 	print('Finished creating training matrices')
 

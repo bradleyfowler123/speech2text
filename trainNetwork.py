@@ -52,8 +52,8 @@ with tf.Session() as sess:
 # ----------- TRAINING LOOP -------------- #
 	for i in range(NUM_INTERATIONS):
 
-		encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTrainingBatch(data_input.xTrain, data_input.yTrain, BATCH_SIZE, data_input.label_indicies)
-		# encoder train [batch_size*length_of_sequence*20] !! need to pad		this one is 153
+		encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTrainingBatch(BATCH_SIZE)
+
 		temp = [encoderTrain[t][0:ENCODER_MAX_TIME] for t in range(len(encoderTrain))]
 		feedDict = {encoder_inputs_embedded: temp}
 		feedDict.update({decoder_targets_indicies: label_inds})
