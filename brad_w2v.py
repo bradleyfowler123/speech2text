@@ -1,7 +1,6 @@
 import numpy as np
 
 
-
 # Loading in all the data structures
 wordList = np.load("trained_w2v_embedding/wordsList.npy")
 wordList = wordList.tolist()
