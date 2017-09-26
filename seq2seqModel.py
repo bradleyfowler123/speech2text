@@ -67,7 +67,8 @@ def indexLoss(decoder_targets_inds, decoder_logits):
 		tf.summary.scalar('summaries/total_loss', total_loss)
 
 		with tf.name_scope('correct_prediction'):
-			correct_prediction = tf.equal(decoder_logits, one_hot)
+			amax = tf.argmax(decoder_logits, axis=2)
+			correct_prediction = tf.equal(amax, tf.cast(decoder_targets_inds, tf.int64))
 			with tf.name_scope('accuracy'):
 				accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 		tf.summary.scalar('accuracy', accuracy)  # log model output

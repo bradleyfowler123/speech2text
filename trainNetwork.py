@@ -53,12 +53,7 @@ with tf.Session() as sess:
 	for i in range(NUM_INTERATIONS):
 
 		encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTrainingBatch(BATCH_SIZE)
-
-		temp = [encoderTrain[t][0:ENCODER_MAX_TIME] for t in range(len(encoderTrain))]
-		feedDict = {encoder_inputs_embedded: temp}
-		feedDict.update({decoder_targets_indicies: label_inds})
-		feedDict.update({decoder_inputs_embedded: decoderTargetTrain})
-
+		feedDict = {encoder_inputs_embedded: encoderTrain, decoder_targets_indicies: label_inds, decoder_inputs_embedded: decoderTargetTrain}
 
 		try:
 			curLoss, _ = sess.run([loss, train_step], feed_dict=feedDict)
@@ -68,6 +63,9 @@ with tf.Session() as sess:
 
 		if i % 50 == 0:
 			print('Current loss:', curLoss, 'at iteration', i)
+			encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTestBatch(BATCH_SIZE)
+			feedDict = {encoder_inputs_embedded: encoderTrain, decoder_targets_indicies: label_inds, decoder_inputs_embedded: decoderTargetTrain}
+			
 			summary, pred = sess.run([merged, decoder_prediction], feed_dict=feedDict)
 			writer.add_summary(summary, global_step=i)
 
