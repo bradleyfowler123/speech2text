@@ -24,7 +24,7 @@ encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies, embe
 # seq2seq model
 decoder_outputs, decoder_logits = model.inference(encoder_inputs_embedded, decoder_inputs_embedded)
 # loss
-loss, decoder_prediction = model.loss(decoder_targets_indicies, decoder_logits, embed_normed)
+loss, decoder_prediction = model.loss(decoder_targets_indicies, decoder_logits, embed_normed, decoder_inputs_embedded)
 # training operation
 train_step = model.optimise(loss)
 
