@@ -24,7 +24,7 @@ tf.reset_default_graph()
 
 def io():		# The input to our model (encoder) is the pre-embedding sound vector. The input into the decoder is the time shifted word embeddings of the text
 	encoder_inputs_embedded = tf.placeholder(shape=(BATCH_SIZE, ENCODER_MAX_TIME, ENCODER_INPUT_DEPTH), dtype=tf.float32, name='encoder_inputs')  # [batch_size*length_of_sequence*20]
-	decoder_targets_indicies = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME), dtype=tf.int64, name='decoder_targets')	# [batch_size, max_time36]
+	decoder_targets_indicies = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME), dtype=tf.int32, name='decoder_targets')	# [batch_size, max_time36]
 	decoder_inputs_embedded = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME, DECODER_INPUT_DEPTH), dtype=tf.float32, name='decoder_inputs')
 	embed_normed = tf.constant(w2v.wordVectorsNormalised, dtype=tf.float32)
 
@@ -100,7 +100,7 @@ def loss(decoder_targets_inds, decoder_logits, embed_normed, decoder_inputs_embe
 
 
 		with tf.name_scope('correct_prediction'):
-			correct_prediction = tf.equal(decoder_prediction, decoder_targets_inds)
+			correct_prediction = tf.equal(decoder_prediction, tf.cast(decoder_targets_inds, tf.int64))
 			with tf.name_scope('accuracy'):
 				accuracy = tf.reduce_mean(tf.cast(correct_prediction, tf.float32))
 		tf.summary.scalar('accuracy', accuracy)  # log model output
