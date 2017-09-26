@@ -75,7 +75,7 @@ def loss(decoder_targets_inds, decoder_logits, embed_normed, decoder_inputs_embe
 	"""
 	def getTargetCS(data):
 		cs = []
-		for i in range(36):
+		for i in range(DECODER_MAX_TIME):
 			cs.append(data[1][i][data[0][i]])
 		return tf.stack(cs)
 
@@ -90,7 +90,8 @@ def loss(decoder_targets_inds, decoder_logits, embed_normed, decoder_inputs_embe
 		decoder_prediction = tf.argmax(cosine_similarity, 2)   															# (BATCH_SIZE, DECODER_MAX_TIME)	- pick maximum liklihood words for each position (the word index)
 
 		#total_loss = tf.reduce_max(cosine_similarity, 2)																# compute the lo
-		total_loss = tf.map_fn(getTargetCS, (decoder_targets_inds, cosine_similarity), dtype=tf.float32)
+		cos_sims = tf.map_fn(getTargetCS, (decoder_targets_inds, cosine_similarity), dtype=tf.float32)
+		total_loss = tf.reduce_mean(cos_sims)
 		#total_loss = tf.map_fn(getTargetCS, (decoder_logits_normalised, decoder_inputs_embedded), dtype=tf.float32)
 		# cosine_similarity = tf.losses.cosine_distance(decoder_logits, decoder_targets_inds, dim=1)
 	
@@ -109,6 +110,6 @@ def loss(decoder_targets_inds, decoder_logits, embed_normed, decoder_inputs_embe
 
 def optimise(total_loss):
 	with tf.name_scope('train'):
-		train_step = tf.train.AdamOptimizer(100e-3).minimize(total_loss)
+		train_step = tf.train.AdamOptimizer(1e-4).minimize(total_loss)
 
 	return train_step
