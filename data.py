@@ -1,6 +1,7 @@
 import numpy as np
 import string
 
+
 # ----- CURENTLY - functions to handle text embedding conversions
 # TODO - merge with brad_w2v.py or brad_input.py or both
 

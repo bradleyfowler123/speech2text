@@ -4,7 +4,6 @@ import brad_model as model
 import brad_input as data_input
 
 
-
 # ----------- GLOBAL VARIABLES ------------ #
 
 # Shared Global Variables

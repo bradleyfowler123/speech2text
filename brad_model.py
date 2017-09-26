@@ -2,7 +2,6 @@ import tensorflow as tf
 import brad_w2v as w2v
 
 
-
 # ----------- GLOBAL VARIABLES ------------ #
 
 # Shared Global Variables

@@ -4,6 +4,7 @@ import os
 import brad_w2v as w2v
 import csv
 
+
 # ----------- GLOBAL VARIABLES ------------ #
 
 # Shared Global Variables
