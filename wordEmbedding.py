@@ -53,8 +53,8 @@ for i, ch in enumerate(wordList):
 def idsToSentence(ids):
 	scentence = ""
 	for word_id in ids:
-		if wordList[word_id] == '<sym>':
-			scentence = scentence + " <sym>"
+		if wordList[word_id] == '<sym>' or wordList[word_id] =='<eos>':
+			scentence = scentence + " " + wordList[word_id]
 		elif wordList[word_id] != '<pad>':
 			scentence = scentence + " " + wordList[word_id].decode("utf-8")
 	return scentence
@@ -73,9 +73,19 @@ def scentence2index(str_):
 		try:
 			res.append(byte2index[bytes(word, encoding='utf-8')])		# scentence2index
 		except KeyError:
-			res.append(byte2index['<sym>'])
+			last_word = word.split('.')
+			if len(last_word) == 2:
+				try:
+					res.append(byte2index[bytes(last_word[0], encoding='utf-8')])		# don't include the full stop
+				except KeyError:
+					res.append(byte2index['<sym>'])  # unknown last word
+			else:
+				res.append(byte2index['<sym>'])										# unknown word
 			pass
+
 	res.append(byte2index['<eos>'])
+
 	for _ in range(len(res), DECODER_MAX_TIME):
 		res.append(byte2index['<pad>'])
+
 	return res

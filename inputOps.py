@@ -19,15 +19,44 @@ def getTrainingBatch(batch_size):
 	input_sound_batch = X_TRAIN[num:num + batch_size]
 	labels_batch = Y_TRAIN[num:num + batch_size]
 	labels_batch_inds = Y_TRAIN_IND[num:num + batch_size]
-
 	# Reversing the order of encoder string apparently helps as per 2014 paper
 	#reversedList = list(arr)
 	#for index,example in enumerate(reversedList):
 	#	reversedList[index] = list(reversed(example))
 
+	def roll_ind(scentence_label_indicies_ref):
+		scentence_label_indicies = list(scentence_label_indicies_ref)			# make copy so that we don't use the pass by reference objcet
+		scentence_end = 0
+		for i in range(len(scentence_label_indicies)):
+			if scentence_label_indicies[i] == w2v.byte2index['<eos>']:
+				scentence_end = i
+				break
+		scentence_label_indicies[scentence_end] = w2v.byte2index['<pad>']
+		scentence_label_indicies = np.roll(scentence_label_indicies, 1)
+		scentence_label_indicies[0] = w2v.byte2index['<eos>']
+		return scentence_label_indicies
 
-	# Lagged labels are for the training input into the decoder
-	lagged_labels_batch = [np.roll(example,1) for example in labels_batch]
+	def roll_vec(scentence_labels_ref):
+		scentence_labels = list(scentence_labels_ref)			# make copy so that we don't use the pass by reference objcet
+		scentence_end = 0
+		eos_vector = w2v.wordVectors[w2v.byte2index['<eos>']]
+		for i in range(len(scentence_labels)):
+			if (scentence_labels[i] == eos_vector).all():
+				scentence_end = i
+				break
+		scentence_labels[scentence_end] = w2v.wordVectors[w2v.byte2index['<pad>']]
+		scentence_label_indicies = np.roll(scentence_labels, 1)
+		scentence_label_indicies[0] = eos_vector
+		return scentence_label_indicies
+
+	# Lagged labels are for the training input into the decoder. The process is doing the following
+	# scentence + <eos> + <pad>'s   >>>>>>>    <eos> + scentence + <pad>'s
+	lagged_labels_batch = [roll_vec(example) for example in labels_batch] #
+
+	#lagged_labels_batch_inds = [roll_ind(example) for example in labels_batch_inds]
+	#print(w2v.idsToSentence(labels_batch_inds[0]))
+	#print(w2v.idsToSentence(lagged_labels_batch_inds[0]))
+
 
 	# Need to transpose these
 	#reversedList = np.asarray(reversedList).T.tolist()
