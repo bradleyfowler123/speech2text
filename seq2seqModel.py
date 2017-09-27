@@ -29,6 +29,10 @@ def io():		# The input to our model (encoder) is the pre-embedding sound vector.
 	decoder_inputs_embedded = tf.placeholder(shape=(BATCH_SIZE, DECODER_MAX_TIME, DECODER_INPUT_DEPTH), dtype=tf.float32, name='decoder_inputs')
 	embed_normed = tf.constant(w2v.wordVectorsNormalised, dtype=tf.float32)
 
+	# IMPORTANT - Decoder targets is the sequence we want the network to output (scentence + EOS). During training,
+	# decoder inputs is the time lagged version of this sequence (EOS + scentence). During evaluation, decoder inputs
+	# is the predicted word from the previous time point.
+
 	return encoder_inputs_embedded, decoder_inputs_embedded, decoder_targets_indicies, embed_normed
 
 
@@ -117,10 +121,8 @@ def cosineLoss(decoder_targets_inds, decoder_logits, embed_normed): #, decoder_i
 
 def euclidLoss(decoder_targets_inds, decoder_logits, embed_normed):  # , decoder_inputs_embedded):
 
-	def cosineSimilarityArray(
-			logits):  # embed_normed is a list of the word vectors. logits is the output of the network (word vector prediction for every time point)
-		shifted_cosine = tf.matmul(logits, tf.transpose(
-			embed_normed)) + 1  # DECODER_MAX_TIME*DECODER_INPUT_DEPTH x DECODER_INPUT_DEPTH*OUTPUT_VOCAB_SIZE = DECODER_MAX_TIME*OUTPUT_VOCAB_SIZE
+	def cosineSimilarityArray(logits):  																				# embed_normed is a list of the word vectors. logits is the output of the network (word vector prediction for every time point)
+		shifted_cosine = tf.matmul(logits, tf.transpose(embed_normed)) + 1  	# DECODER_MAX_TIME*DECODER_INPUT_DEPTH x DECODER_INPUT_DEPTH*OUTPUT_VOCAB_SIZE = DECODER_MAX_TIME*OUTPUT_VOCAB_SIZE
 		return -1 * shifted_cosine
 
 	def getTargetCS(data):
@@ -135,8 +137,7 @@ def euclidLoss(decoder_targets_inds, decoder_logits, embed_normed):  # , decoder
 		cosine_similarity = tf.map_fn(cosineSimilarityArray,
 									  decoder_logits_normalised)  # for the entire batch, compute the cosine similarity for every time point
 
-		decoder_prediction = tf.argmax(cosine_similarity,
-									   2)  # (BATCH_SIZE, DECODER_MAX_TIME)	- pick maximum liklihood words for each position (the word index)
+		decoder_prediction = tf.argmax(cosine_similarity, 2)  # (BATCH_SIZE, DECODER_MAX_TIME)	- pick maximum liklihood words for each position (the word index)
 
 		# total_loss = tf.reduce_max(cosine_similarity, 2)																# compute the lo
 		cos_sims = tf.map_fn(getTargetCS, (decoder_targets_inds, cosine_similarity), dtype=tf.float32)

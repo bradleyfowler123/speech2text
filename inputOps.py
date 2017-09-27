@@ -15,9 +15,10 @@ ENCODER_INPUT_DEPTH = 20
 
 def getTrainingBatch(batch_size):
 	num = randint(0, numTrainingExamples - batch_size - 1)
-	arr = X_TRAIN[num:num + batch_size]
-	labels = Y_TRAIN[num:num + batch_size]
-	label_inds = Y_TRAIN_IND[num:num + batch_size]
+
+	input_sound_batch = X_TRAIN[num:num + batch_size]
+	labels_batch = Y_TRAIN[num:num + batch_size]
+	labels_batch_inds = Y_TRAIN_IND[num:num + batch_size]
 
 	# Reversing the order of encoder string apparently helps as per 2014 paper
 	#reversedList = list(arr)
@@ -26,26 +27,26 @@ def getTrainingBatch(batch_size):
 
 
 	# Lagged labels are for the training input into the decoder
-	laggedLabels = [np.roll(example,-1) for example in labels]
+	lagged_labels_batch = [np.roll(example,1) for example in labels_batch]
 
 	# Need to transpose these
 	#reversedList = np.asarray(reversedList).T.tolist()
 	#labels = np.asarray(labels).T.tolist()
 	#laggedLabels = np.asarray(laggedLabels).T.tolist()
-	return arr, labels, laggedLabels, label_inds
+	return input_sound_batch, labels_batch, labels_batch_inds, lagged_labels_batch
 
 
 def getTestBatch(batch_size):
 	# sound data
-	arr = X_TRAIN[0:batch_size]
+	input_sound_batch = X_TRAIN[0:batch_size]
 
 	# labels
-	labels = Y_TRAIN[0:batch_size]
-	label_inds = Y_TRAIN_IND[0:batch_size]
-	laggedLabels = [np.roll(example,-1) for example in labels]
+	labels_batch = Y_TRAIN[0:batch_size]
+	labels_batch_inds = Y_TRAIN_IND[0:batch_size]
+	lagged_labels_batch = [np.roll(example,1) for example in labels_batch]
 
 
-	return arr, labels, laggedLabels, label_inds
+	return input_sound_batch, labels_batch, labels_batch_inds, lagged_labels_batch
 
 def createTrainingMatrices():
 	# load meta file

@@ -50,10 +50,11 @@ with tf.Session() as sess:
 
 
 # ----------- TRAINING LOOP -------------- #
+	
 	for i in range(NUM_INTERATIONS):
 
-		encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTrainingBatch(BATCH_SIZE)
-		feedDict = {encoder_inputs_embedded: encoderTrain, decoder_targets_indicies: label_inds, decoder_inputs_embedded: decoderTargetTrain}
+		encoderTrain, _, decoderTargetsIndicies, decoderInputTrain = data_input.getTrainingBatch(BATCH_SIZE)			# decoder inputs are lagged
+		feedDict = {encoder_inputs_embedded: encoderTrain, decoder_targets_indicies: decoderTargetsIndicies, decoder_inputs_embedded: decoderInputTrain}
 
 		try:
 			curLoss, _ = sess.run([loss, train_step], feed_dict=feedDict)
@@ -63,8 +64,8 @@ with tf.Session() as sess:
 
 		if i % 50 == 0:
 			print('Current loss:', curLoss, 'at iteration', i)
-			encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTestBatch(BATCH_SIZE)
-			feedDict = {encoder_inputs_embedded: encoderTrain, decoder_targets_indicies: label_inds, decoder_inputs_embedded: decoderTargetTrain}
+			encoderTrain, _, decoderTargetsIndicies, decoderInputTrain = data_input.getTestBatch(BATCH_SIZE)
+			feedDict = {encoder_inputs_embedded: encoderTrain, decoder_targets_indicies: decoderTargetsIndicies, decoder_inputs_embedded: decoderInputTrain}
 			
 			summary, pred = sess.run([merged, decoder_prediction], feed_dict=feedDict)
 			writer.add_summary(summary, global_step=i)
@@ -76,3 +77,17 @@ with tf.Session() as sess:
 		if i % 10000 == 0 and i != 0:
 			print('Saving Checkpoint...')
 			savePath = saver.save(sess, "models/pretrained_seq2seq.ckpt", global_step=i)
+
+
+	"""
+# ------------- EVALUATION --------------- #
+	print('restoring model')
+	saver.restore(sess, "trained_models/pretrained_seq2seq.ckpt-490000")
+	print("Model restored.")
+
+	encoderTrain, decoderTargetTrain, decoderInputTrain, label_inds = data_input.getTestBatch(BATCH_SIZE)
+	feedDict = {encoder_inputs_embedded: encoderTrain}
+
+	pred = sess.run(decoder_prediction, feedDict)
+	print(pred)
+	"""
